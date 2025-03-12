@@ -17,7 +17,8 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadSchedule(group) {
     try {
         // Запрос к серверу за расписанием
-        const response = await fetch(`http://localhost:3000/api/schedule?group=${group}`);
+        // Либо https://109.172.94.255 либо localhost. Надо проверить
+        const response = await fetch(`http://82.117.87.58:3000/api/schedule?group=${group}`);
         if (!response.ok) throw new Error('Ошибка сети');
         
         const schedule = await response.json();
