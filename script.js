@@ -17,7 +17,7 @@ document.addEventListener('DOMContentLoaded', async () => {
 async function loadSchedule(group) {
     try {
         // Запрос к серверу за расписанием
-        // Либо https://109.172.94.255 либо localhost. Надо проверить
+        // Либо https://109.172.94.255 либо localhost
         const response = await fetch(`http://82.117.87.58:3000/api/schedule?group=${group}`);
         if (!response.ok) throw new Error('Ошибка сети');
         
@@ -57,7 +57,7 @@ function processSchedule(schedule) {
     // Находим ближайший день с парами
     const nearestDay = Object.keys(days).find(date => {
         const [d, m, y] = date.split('.');
-        return new Date(`${y}-${m}-${d}T00:00:00+03:00`) >= mskNow;
+        return new Date(`${y}-${m}-${d}T23:59:59+03:00`) >= mskNow;
     });
     
     return days[nearestDay] || [];
