@@ -1,94 +1,119 @@
+/* Сброс стилей и базовые настройки */
 * {
     margin: 0;
     padding: 0;
     box-sizing: border-box;
     font-family: Arial, sans-serif;
-}
-
-body {
-    background: #f8fafc;
-}
-
-#groupDialog {
-    margin: auto;
-    padding: 20px;
+  }
+  
+  body {
+    background: #ffffff;
+    color: #000000;
+    padding-bottom: 60px; /* чтобы контент не скрывался футером */
+  }
+  
+  /* Центрирование модального окна ввода группы */
+  #groupDialog {
+    position: fixed;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    z-index: 10000;
+    border: none;
     border-radius: 8px;
-    border: 1px solid #ccc;
-}
-
-#groupDialog form {
+    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+  }
+  
+  /* Стили для диалога ввода группы */
+  #groupDialog form {
     display: flex;
     flex-direction: column;
     gap: 15px;
-}
-
-#groupDialog input {
+    padding: 20px;
+    background: #fff;
+  }
+  
+  #groupDialog input {
     padding: 10px;
     font-size: 16px;
-}
-
-#groupDialog button {
+  }
+  
+  #groupDialog button {
     padding: 10px 20px;
     background: #3b82f6;
     color: white;
     border: none;
     border-radius: 4px;
     cursor: pointer;
-}
-
-.container {
+  }
+  
+  /* Блок для заголовка (дата или "Следующая пара:") */
+  #dateContainer {
+    text-align: center;
+    font-size: 1.2rem;
+    margin: 20px 0;
+    font-weight: bold;
+  }
+  
+  /* Контейнер для расписания */
+  .container {
     max-width: 800px;
     margin: 0 auto;
-    padding: 20px;
+    padding: 0 20px 40px;
     display: flex;
     flex-direction: column;
     gap: 20px;
-}
-
-.card {
-    padding: 25px;
-    border-radius: 12px;
-    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
-}
-
-.card-header {
+  }
+  
+  /* Карточки занятий - теперь с закруглёнными краями и тенью */
+  .card {
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+    border: none;
+    color: #0f172a;
+    /* фон задаётся через inline-стили в скрипте, поэтому не переопределяем его здесь */
+  }
+  
+  /* Минимальный набор информации в карточке */
+  .card-header .time,
+  .time {
+    font-size: 1.2rem;
+    font-weight: bold;
+    margin-bottom: 5px;
+  }
+  
+  .discipline {
+    font-size: 1.1rem;
+    margin-bottom: 5px;
+  }
+  
+  .details {
     display: flex;
     justify-content: space-between;
-    margin-bottom: 15px;
-}
-
-.time {
-    font-size: 1.2em;
-    color: #334155;
-}
-
-.discipline {
-    font-size: 1.4em;
-    margin-bottom: 10px;
-    color: #1e293b;
-}
-
-.details {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: 15px;
-    color: #64748b;
-}
-
-.details > div:last-child {
-    text-align: right;
-}
-
-.badge {
+    font-size: 0.95rem;
+    color: #475569;
+  }
+  
+  .badge {
     display: inline-block;
     padding: 4px 8px;
     border-radius: 4px;
     background: #e2e8f0;
     font-size: 0.9em;
-}
-
-.teacher {
-    margin-top: 8px;
-    font-size: 0.95em;
-    color: #475569;
-}
+  }
+  
+  /* Футер, закреплённый снизу страницы */
+  footer {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    width: 100%;
+    background: #f0f0f0;
+    padding: 10px;
+    text-align: center;
+    font-size: 0.9em;
+    color: #555;
+    z-index: 5000;
+  }
+  
