@@ -1,119 +1,154 @@
 /* Сброс стилей и базовые настройки */
 * {
-    margin: 0;
-    padding: 0;
-    box-sizing: border-box;
-    font-family: Arial, sans-serif;
-  }
-  
-  body {
-    background: #ffffff;
-    color: #000000;
-    padding-bottom: 60px; /* чтобы контент не скрывался футером */
-  }
-  
-  /* Центрирование модального окна ввода группы */
-  #groupDialog {
-    position: fixed;
-    top: 50%;
-    left: 50%;
-    transform: translate(-50%, -50%);
-    z-index: 10000;
-    border: none;
-    border-radius: 8px;
-    box-shadow: 0 2px 10px rgba(0,0,0,0.2);
-  }
-  
-  /* Стили для диалога ввода группы */
-  #groupDialog form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-    padding: 20px;
-    background: #fff;
-  }
-  
-  #groupDialog input {
-    padding: 10px;
-    font-size: 16px;
-  }
-  
-  #groupDialog button {
-    padding: 10px 20px;
-    background: #3b82f6;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-  }
-  
-  /* Блок для заголовка (дата или "Следующая пара:") */
-  #dateContainer {
-    text-align: center;
-    font-size: 1.2rem;
-    margin: 20px 0;
-    font-weight: bold;
-  }
-  
-  /* Контейнер для расписания */
-  .container {
-    max-width: 800px;
-    margin: 0 auto;
-    padding: 0 20px 40px;
-    display: flex;
-    flex-direction: column;
-    gap: 20px;
-  }
-  
-  /* Карточки занятий - теперь с закруглёнными краями и тенью */
-  .card {
-    padding: 20px;
-    border-radius: 8px;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-    border: none;
-    color: #0f172a;
-    /* фон задаётся через inline-стили в скрипте, поэтому не переопределяем его здесь */
-  }
-  
-  /* Минимальный набор информации в карточке */
-  .card-header .time,
-  .time {
-    font-size: 1.2rem;
-    font-weight: bold;
-    margin-bottom: 5px;
-  }
-  
-  .discipline {
-    font-size: 1.1rem;
-    margin-bottom: 5px;
-  }
-  
-  .details {
-    display: flex;
-    justify-content: space-between;
-    font-size: 0.95rem;
-    color: #475569;
-  }
-  
-  .badge {
-    display: inline-block;
-    padding: 4px 8px;
-    border-radius: 4px;
-    background: #e2e8f0;
-    font-size: 0.9em;
-  }
-  
-  /* Футер, закреплённый снизу страницы */
-  footer {
-    position: fixed;
-    bottom: 0;
-    left: 0;
-    width: 100%;
-    background: #f0f0f0;
-    padding: 10px;
-    text-align: center;
-    font-size: 0.9em;
-    color: #555;
-    z-index: 5000;
-  }
-  
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+  font-family: Arial, sans-serif;
+}
+
+body {
+  background: #ffffff;
+  color: #000000;
+  padding-bottom: 60px; /* чтобы контент не скрывался футером */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+/* Шапка (header) */
+header {
+  height: 50px;
+  display: flex;
+  align-items: center;
+  background-color: #f0f0f0;
+  padding: 0 20px;
+  width: 100%;
+}
+
+/* Название группы в левом верхнем углу */
+.group-name a {
+  text-decoration: none;
+  color: #333;
+  font-weight: bold;
+  font-size: 1.2rem;
+}
+
+/* Блок "главной страницы" для выбора группы и недели */
+#mainPage {
+  max-width: 400px;
+  width: 100%;
+  margin: 20px auto;
+  padding: 20px;
+  border: 1px solid #ddd;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  text-align: center;
+}
+
+#mainPage h2 {
+  margin-bottom: 10px;
+}
+
+#mainPage select,
+#mainPage button {
+  margin-bottom: 20px;
+  width: 100%;
+  padding: 8px;
+  font-size: 1rem;
+}
+
+/* Контейнер для расписания */
+#scheduleView {
+  max-width: 800px;
+  width: 100%;
+  margin: 20px auto;
+  padding: 0 20px 60px;
+}
+
+/* Заголовок даты или "Следующая пара:" */
+#dateContainer {
+  text-align: center;
+  font-size: 1.2rem;
+  margin: 20px 0;
+  font-weight: bold;
+}
+
+/* Контейнер с карточками */
+.container {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+/* Карточки занятий */
+.card {
+  padding: 20px;
+  border-radius: 8px;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  border: none;
+  color: #0f172a;
+  /* фон задаётся через getColor(...) в JS */
+}
+
+/* Заголовок внутри карточки */
+.card-header .time,
+.time {
+  font-size: 1.2rem;
+  font-weight: bold;
+  margin-bottom: 5px;
+}
+
+/* Название дисциплины */
+.discipline {
+  font-size: 1.1rem;
+  margin-bottom: 5px;
+}
+
+/* Блок с деталями: преподаватель, аудитория и т.д. */
+.details {
+  display: flex;
+  justify-content: space-between;
+  font-size: 0.95rem;
+  color: #475569;
+}
+
+.badge {
+  display: inline-block;
+  padding: 4px 8px;
+  border-radius: 4px;
+  background: #e2e8f0;
+  font-size: 0.9em;
+}
+
+/* Состояние для "Следующая пара" (меняет фон страницы, если нужно) */
+body.next-pair {
+  background-color: #f9fafb;
+}
+
+/* Футер */
+footer {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  background: #f0f0f0;
+  padding: 10px;
+  text-align: center;
+  font-size: 0.9em;
+  color: #555;
+  z-index: 5000;
+}
+
+/* Стили для кнопки "Показать остальные пары на сегодня" (при желании можно доработать) */
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  background-color: #3b82f6;
+  color: #fff;
+  padding: 10px 20px;
+}
+
+button:hover {
+  background-color: #2563eb;
+}
