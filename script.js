@@ -41,7 +41,7 @@ async function loadSchedule(group) {
 function processSchedule(schedule) {
     const now = new Date();
     // Для отладки используем 'Asia/Tokyo'; для реального времени можно заменить на 'Europe/Moscow'
-    const mskNow = new Date(now.toLocaleString('en-US', { timeZone: 'Asia/Tokyo' }));
+    const mskNow = new Date(now.toLocaleString('en-US', { timeZone: 'Europe/Moscow' }));
 
     const mapByDate = {};
 
