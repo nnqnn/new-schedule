@@ -8,12 +8,13 @@
 </head>
 <body>
 
-  <!-- Шапка с названием группы (ссылка) -->
+  <!-- Шапка с названием группы и переключателем темы -->
   <header>
     <div class="group-name">
       <!-- При нажатии будет возвращать на "главную страницу" (выбор группы/недели) -->
       <a href="#" id="groupNameLink"></a>
     </div>
+    <button id="themeToggleBtn">Темная тема</button>
   </header>
 
   <!-- Блок "главной страницы" для выбора группы и недели -->
@@ -53,8 +54,8 @@
     <h2>Выберите неделю</h2>
     <select id="weekSelect">
       <option value="0">Текущая неделя</option>
-      <option value="-1">Предыдущая неделя</option>
       <option value="1">Следующая неделя</option>
+      <option value="-1">Предыдущая неделя</option>
     </select>
 
     <button id="showScheduleBtn">Показать</button>
@@ -62,7 +63,7 @@
 
   <!-- Блок для вывода расписания -->
   <div id="scheduleView" style="display: none;">
-    <!-- Заголовок: дата или "Следующая пара:" или "Расписание на выбранную неделю" -->
+    <!-- Заголовок: дата или "Следующая пара:" / "Текущая пара:" или "Расписание на выбранную неделю" -->
     <div id="dateContainer"></div>
     <!-- Карточки с парами -->
     <div class="container" id="scheduleContainer"></div>
