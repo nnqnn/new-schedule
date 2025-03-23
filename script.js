@@ -89,7 +89,7 @@ async function loadSchedule(group, week = '0') {
             result = {
               date: earliestDate,
               pairs: map[earliestDate],
-              showAll: true, // флаг, говорящий что мы выводим все пары на этот день
+              showAll: true, // флаг, говорящий, что мы выводим все пары на этот день
               allPairsForToday: map[earliestDate]
             };
             fullWeekSchedule = nextWeekSchedule; // сохраняем полное расписание на будущее
@@ -565,9 +565,9 @@ function createPairCard(pair) {
  */
 function getGradient(color) {
   if (color === 'sky') {
-    return "linear-gradient(135deg, #6c8ea1, #4e6e7e)";
+    return "linear-gradient(135deg, #6d8ecc, #4d6ecf)";
   } else if (color === 'teal') {
-    return "linear-gradient(135deg, #5e9c98, #4b7d7a)";
+    return "linear-gradient(135deg, #5ead97, #4b9d7b)";
   } else if (color === 'none') {
     return "#444";
   }
