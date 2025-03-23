@@ -7,13 +7,14 @@
 }
 
 body {
-  background: #ffffff;
-  color: #000000;
+  background: #333;
+  color: #e0e0e0;
   padding-bottom: 60px; /* чтобы контент не скрывался футером */
   display: flex;
   flex-direction: column;
   align-items: center;
   transition: background-color 0.3s, color 0.3s;
+  padding-top: 60px; /* отступ для фиксированного header */
 }
 
 /* Плавный переход для основных блоков */
@@ -25,38 +26,49 @@ footer {
   transition: background-color 0.3s, color 0.3s, border-color 0.3s;
 }
 
-/* Шапка (header) */
+/* Фиксированная шапка */
 header {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
   height: 50px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  background-color: #f0f0f0;
+  background-color: #2a2a2a;
   padding: 0 20px;
   width: 100%;
+  z-index: 1000;
 }
 
 /* Название группы в левом верхнем углу */
 .group-name a {
   text-decoration: none;
-  color: #333;
+  color: #fff;
   font-weight: bold;
   font-size: 1.2rem;
 }
 
-/* Кнопка переключения темы */
-#themeToggleBtn {
-  padding: 6px 12px;
-  font-size: 0.9rem;
-  border: none;
-  border-radius: 4px;
-  background-color: #d6d5d5;
-  color: #000000;
-  cursor: pointer;
+/* Блок для кнопок в header */
+.header-buttons {
+  display: flex;
+  gap: 10px;
 }
 
-#themeToggleBtn:hover {
-  background-color: #b3b1b1;
+/* Кнопки */
+button {
+  cursor: pointer;
+  border: none;
+  border-radius: 4px;
+  background-color: #212121;
+  color: #fff;
+  padding: 10px 20px;
+  transition: background-color 0.3s;
+}
+
+button:hover {
+  background-color: #3c3c3c;
 }
 
 /* Блок "главной страницы" для выбора группы и недели */
@@ -65,10 +77,11 @@ header {
   width: 100%;
   margin: 20px auto;
   padding: 20px;
-  border: 1px solid #ddd;
+  border: 1px solid #646464;
   border-radius: 8px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 4px rgba(255, 255, 255, 0.1);
   text-align: center;
+  background: #333333;
 }
 
 #mainPage h2 {
@@ -81,6 +94,9 @@ header {
   width: 100%;
   padding: 8px;
   font-size: 1rem;
+  background-color: #212121;
+  color: #fff;
+  border: 1px solid #646464;
 }
 
 /* Контейнер для расписания */
@@ -89,6 +105,7 @@ header {
   width: 100%;
   margin: 20px auto;
   padding: 0 20px 60px;
+  background: #333;
 }
 
 /* Заголовок даты или "Следующая пара:" / "Текущая пара:" */
@@ -120,7 +137,27 @@ header {
   border-radius: 8px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
   border: none;
-  color: #0f172a;
+  color: #e0e0e0; /* Основной цвет текста */
+  background-size: cover;
+  background-repeat: no-repeat;
+  background-color: #444;
+}
+
+/* Вывод порядкового номера пары */
+.card .order {
+  font-weight: bold;
+  margin-right: 10px;
+  color: #bbb;
+}
+
+/* Особый стиль для карточек "Внеучебное мероприятие" */
+.card.non-academic {
+  color: #e0e0e0;
+}
+.card.non-academic .teacher,
+.card.non-academic .details > div:last-child {
+  font-weight: bold;
+  color: #e0e0e0;
 }
 
 /* Заголовок внутри карточки */
@@ -142,20 +179,23 @@ header {
   display: flex;
   justify-content: space-between;
   font-size: 0.95rem;
-  color: #475569;
+  font-weight: bold;
+  color: #e0e0e0;
 }
 
 .badge {
   display: inline-block;
   padding: 4px 8px;
   border-radius: 4px;
-  background: #e2e8f0;
+  background: #646464;
+  font-weight: normal;
+  color: #ccc;
   font-size: 0.9em;
 }
 
-/* Состояние для "Следующая пара" (меняет фон страницы, если нужно) */
+/* Состояние для "Следующая пара" */
 body.next-pair {
-  background-color: #f9fafb;
+  background-color: #3c3c3c;
 }
 
 /* Футер */
@@ -164,66 +204,10 @@ footer {
   bottom: 0;
   left: 0;
   width: 100%;
-  background: #f0f0f0;
+  background: #2a2a2a;
   padding: 10px;
   text-align: center;
   font-size: 0.9em;
-  color: #555;
-  z-index: 5000;
-}
-
-/* Стили для кнопок (отказ от синего) */
-button {
-  cursor: pointer;
-  border: none;
-  border-radius: 4px;
-  background-color: #f0f0f0;
-  color: #000000;
-  padding: 10px 20px;
-}
-
-button:hover {
-  background-color: #d6d5d5;
-}
-
-/* Стили для тёмной темы */
-body.dark-theme {
-  background: #333;
-  color: #e0e0e0;
-}
-
-body.dark-theme header {
-  background-color: #2a2a2a;
-}
-
-body.dark-theme .group-name a {
-  color: #ffffff;
-}
-
-body.dark-theme #mainPage {
-  border: 1px solid #646464;
-  background: #333333;
-}
-
-body.dark-theme #scheduleView {
-  background: #333;
-}
-
-body.dark-theme .card {
-  box-shadow: 0 2px 8px rgba(255, 255, 255, 0.1);
-  color: #333;
-}
-
-body.dark-theme footer {
-  background: #2a2a2a;
   color: #ccc;
-}
-
-body.dark-theme button {
-  background-color: #212121;
-  color: #fff;
-}
-
-body.dark-theme button:hover {
-  background-color: #3c3c3c;
+  z-index: 5000;
 }

@@ -2,19 +2,21 @@
 <html lang="ru">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="viewport" content="width=device-width,initial-scale=1.0">
   <title>Расписание</title>
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-  <!-- Шапка с названием группы и переключателем темы -->
+  <!-- Шапка с названием группы и переключателем режима отображения расписания -->
   <header>
     <div class="group-name">
-      <!-- При нажатии будет возвращать на "главную страницу" (выбор группы/недели) -->
+      <!-- При нажатии возвращает на "главную страницу" (выбор группы/недели) -->
       <a href="#" id="groupNameLink"></a>
     </div>
-    <button id="themeToggleBtn">Темная тема</button>
+    <div class="header-buttons">
+      <button id="toggleScheduleBtn">Показать расписание на неделю</button>
+    </div>
   </header>
 
   <!-- Блок "главной страницы" для выбора группы и недели -->
@@ -51,9 +53,9 @@
       <option value="К1609-24/2">К1609-24/2</option>
     </select>
 
-    <h2>Выберите неделю</h2>
+    <h2>Выберите отображение</h2>
     <select id="weekSelect">
-      <option value="0">Текущая неделя</option>
+      <option value="0">По умолчанию</option>
       <option value="1">Следующая неделя</option>
       <option value="-1">Предыдущая неделя</option>
     </select>
