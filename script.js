@@ -244,13 +244,20 @@ function processSchedule(schedule) {
   }
 }
 
+function parseDate(dateStr) {
+  const [day, month, year] = dateStr.split('.').map(Number);
+  return new Date(year, month - 1, day); // JS считает месяцы с 0
+}
+
 /**
  * Ищем ближайший день в будущем (после todayStr) среди mapByDate
  */
 function getNextDayPairs(mapByDate, todayStr) {
-  const allDates = Object.keys(mapByDate).sort(compareDates);
+  const allDates = Object.keys(mapByDate).sort((a, b) => parseDate(a) - parseDate(b));
+  const todayDate = parseDate(todayStr);
+
   for (const dt of allDates) {
-    if (dt > todayStr) {
+    if (parseDate(dt) > todayDate) {
       return {
         date: dt,
         pairs: mapByDate[dt],
@@ -259,7 +266,6 @@ function getNextDayPairs(mapByDate, todayStr) {
       };
     }
   }
-  // Если ничего не нашлось
   return { date: '', pairs: [], showAll: true, allPairsForToday: [] };
 }
 
