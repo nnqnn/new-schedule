@@ -249,6 +249,11 @@ function parseDate(dateStr) {
   return new Date(year, month - 1, day); // JS считает месяцы с 0
 }
 
+function parseDate(dateStr) {
+  const [day, month, year] = dateStr.split('.').map(Number);
+  return new Date(year, month - 1, day); // JS считает месяцы с 0
+}
+
 /**
  * Ищем ближайший день в будущем (после todayStr) среди mapByDate
  */
