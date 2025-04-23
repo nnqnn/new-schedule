@@ -322,48 +322,6 @@ function renderAutoSchedule(result) {
     dateContainer.textContent = `Пары на ${result.date}`;
     result.pairs.forEach(pair => container.appendChild(createPairCard(pair)));
   }
-
-  // Проверяем, нужно ли показывать кнопку-переключатель (только если сегодня или если пар не все)
-  let toggleNeeded = (result.date !== getTodayStr());
-  if (result.date === getTodayStr()) {
-    // Если сегодня, проверяем, не все ли пары показаны
-    const renderedCount = (result.showBoth)
-      ? (result.currentPairs.length + result.nextPairs.length)
-      : (result.showCurrentOnly
-         ? result.currentPairs.length
-         : (result.showNextPair ? result.nextPairs.length : result.pairs.length));
-
-    if (result.allPairsForToday && (result.allPairsForToday.length > renderedCount)) {
-      toggleNeeded = true;
-    }
-  }
-
-  if (toggleNeeded) {
-    const toggleBtn = document.createElement('button');
-    if (result.date === getTodayStr()) {
-      // Сегодня
-      if (currentPartialView) {
-        toggleBtn.textContent = "Показать все пары на сегодня";
-      } else {
-        toggleBtn.textContent = "Показать короткое расписание";
-      }
-    } else {
-      // Не сегодня (ближайший день может быть и на следующей неделе)
-      if (currentPartialView) {
-        toggleBtn.textContent = "Показать расписание на неделю";
-      } else {
-        toggleBtn.textContent = "Вернуться к краткому виду";
-      }
-    }
-
-    toggleBtn.style.margin = "20px auto";
-    toggleBtn.style.display = "block";
-
-    toggleBtn.addEventListener('click', () => {
-      toggleView(toggleBtn);
-    });
-    container.appendChild(toggleBtn);
-  }
 }
 
 /**
@@ -379,22 +337,84 @@ function toggleView(button) {
   }
 
   if (currentPartialView) {
-    // Переход к "полной" версии
-    if (currentAutoSchedule.date === todayStr) {
-      // Все пары на сегодня
-      renderAllPairsForDate(todayStr, currentAutoSchedule.allPairsForToday);
-    } else {
-      // Расписание на всю (текущую) неделю
-      renderFullWeek(fullWeekSchedule);
-    }
+    // Переход к "полной" версии - всегда показываем и сегодня, и остаток недели
+    renderRemainingSchedule();
     currentPartialView = false;
-
   } else {
     // Возврат к "короткому" виду
     renderAutoSchedule(currentAutoSchedule);
     currentPartialView = true;
   }
   updateHeaderButtonText();
+}
+
+/**
+ * Рендерит оставшиеся пары на сегодня и расписание на оставшуюся неделю
+ */
+function renderRemainingSchedule() {
+  const container = document.getElementById('scheduleContainer');
+  const dateContainer = document.getElementById('dateContainer');
+  container.innerHTML = '';
+  dateContainer.textContent = 'Расписание на оставшиеся дни';
+  document.body.classList.remove('current-pair', 'next-pair');
+
+  const todayStr = getTodayStr();
+  const remainingWeekSchedule = getRemainingWeekSchedule(fullWeekSchedule);
+  
+  if (!remainingWeekSchedule || remainingWeekSchedule.length === 0) {
+    container.innerHTML = '<div class="card">Нет пар на оставшуюся неделю</div>';
+    return;
+  }
+
+  const map = groupByDate(remainingWeekSchedule);
+  const sortedDates = Object.keys(map).sort(compareDates);
+
+  sortedDates.forEach(dateStr => {
+    const dayHeader = document.createElement('h3');
+    dayHeader.textContent = dateStr + (dateStr === todayStr ? ' (сегодня)' : '');
+    container.appendChild(dayHeader);
+
+    map[dateStr].forEach(pair => {
+      const card = createPairCard(pair);
+      container.appendChild(card);
+    });
+  });
+}
+
+/**
+ * Возвращает расписание только на оставшиеся дни недели
+ */
+function getRemainingWeekSchedule(fullSchedule) {
+  const mskNow = getMskNow();
+  const todayStr = formatDate(mskNow);
+  
+  return fullSchedule.filter(pair => {
+    // Если день в будущем, оставляем
+    if (compareDates(pair.date, todayStr) > 0) {
+      return true;
+    }
+    
+    // Если сегодня, то проверяем время
+    if (pair.date === todayStr) {
+      const startTime = new Date(`${todayStr.split('.').reverse().join('-')}T${pair.startTime}`);
+      return startTime > mskNow;
+    }
+    
+    return false;
+  });
+}
+
+/**
+ * Возвращает только оставшиеся пары на сегодня
+ */
+function getRemainingPairsForToday(allPairs) {
+  const mskNow = getMskNow();
+  const todayStr = formatDate(mskNow);
+  
+  return allPairs.filter(pair => {
+    const startTime = new Date(`${todayStr.split('.').reverse().join('-')}T${pair.startTime}`);
+    return startTime > mskNow;
+  });
 }
 
 /**
@@ -406,14 +426,9 @@ function toggleHeaderView() {
     return; // Если выбрана не текущая неделя, кнопка скрыта и клик не должен ничего делать
   }
 
-  const todayStr = getTodayStr();
   if (currentPartialView) {
-    // Переход к полному
-    if (currentAutoSchedule.date === todayStr) {
-      renderAllPairsForDate(todayStr, currentAutoSchedule.allPairsForToday);
-    } else {
-      renderFullWeek(fullWeekSchedule);
-    }
+    // Переход к полному - всегда показываем и сегодня, и остаток недели
+    renderRemainingSchedule();
     currentPartialView = false;
   } else {
     // Возврат к краткому
@@ -439,19 +454,10 @@ function updateHeaderButtonText() {
     return;
   }
 
-  const todayStr = getTodayStr();
-  if (currentAutoSchedule.date === todayStr) {
-    if (currentPartialView) {
-      btn.textContent = "Показать все пары на сегодня";
-    } else {
-      btn.textContent = "Показать короткое расписание";
-    }
+  if (currentPartialView) {
+    btn.textContent = "Показать полное расписание";
   } else {
-    if (currentPartialView) {
-      btn.textContent = "Показать расписание на неделю";
-    } else {
-      btn.textContent = "Вернуться к краткому виду";
-    }
+    btn.textContent = "Показать короткое расписание";
   }
 }
 
@@ -462,22 +468,14 @@ function renderAllPairsForDate(date, pairs) {
   const container = document.getElementById('scheduleContainer');
   const dateContainer = document.getElementById('dateContainer');
   container.innerHTML = '';
-  dateContainer.textContent = `Все пары на ${date}`;
+  dateContainer.textContent = `Оставшиеся пары на ${date}`;
   document.body.classList.remove('current-pair', 'next-pair');
 
-  pairs.forEach(pair => container.appendChild(createPairCard(pair)));
-
-  const toggleBtn = document.createElement('button');
-  toggleBtn.textContent = "Показать короткое расписание";
-  toggleBtn.style.margin = "20px auto";
-  toggleBtn.style.display = "block";
-
-  toggleBtn.addEventListener('click', () => {
-    renderAutoSchedule(currentAutoSchedule);
-    currentPartialView = true;
-    updateHeaderButtonText();
-  });
-  container.appendChild(toggleBtn);
+  if (pairs.length === 0) {
+    container.innerHTML = '<div class="card">Больше нет пар на сегодня</div>';
+  } else {
+    pairs.forEach(pair => container.appendChild(createPairCard(pair)));
+  }
 }
 
 /**
@@ -490,7 +488,7 @@ function renderFullWeek(schedule) {
   document.body.classList.remove('current-pair', 'next-pair');
 
   if (!schedule || schedule.length === 0) {
-    container.innerHTML = '<div class="card">Нет пар на эту неделю</div>';
+    container.innerHTML = '<div class="card">Нет пар на оставшуюся неделю</div>';
     dateContainer.textContent = '';
     return;
   }
@@ -498,7 +496,7 @@ function renderFullWeek(schedule) {
   const map = groupByDate(schedule);
   const sortedDates = Object.keys(map).sort(compareDates);
 
-  dateContainer.textContent = 'Расписание на выбранную неделю';
+  dateContainer.textContent = 'Расписание на оставшуюся неделю';
 
   sortedDates.forEach(dateStr => {
     const dayHeader = document.createElement('h3');
@@ -510,21 +508,6 @@ function renderFullWeek(schedule) {
       container.appendChild(card);
     });
   });
-
-  // Если всё же у нас week=0 (хотя обычно не должно быть) — добавим кнопку возврата
-  if (localStorage.getItem('week') === '0') {
-    const toggleBtn = document.createElement('button');
-    toggleBtn.textContent = "Вернуться к краткому виду";
-    toggleBtn.style.margin = "20px auto";
-    toggleBtn.style.display = "block";
-
-    toggleBtn.addEventListener('click', () => {
-      renderAutoSchedule(currentAutoSchedule);
-      currentPartialView = true;
-      updateHeaderButtonText();
-    });
-    container.appendChild(toggleBtn);
-  }
 }
 
 /**
