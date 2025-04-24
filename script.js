@@ -355,7 +355,7 @@ function renderRemainingSchedule() {
   const container = document.getElementById('scheduleContainer');
   const dateContainer = document.getElementById('dateContainer');
   container.innerHTML = '';
-  dateContainer.textContent = 'Расписание на оставшиеся дни';
+  dateContainer.textContent = 'Расписание на оставшуюся неделю';
   document.body.classList.remove('current-pair', 'next-pair');
 
   const todayStr = getTodayStr();
@@ -374,10 +374,41 @@ function renderRemainingSchedule() {
     dayHeader.textContent = dateStr + (dateStr === todayStr ? ' (сегодня)' : '');
     container.appendChild(dayHeader);
 
-    map[dateStr].forEach(pair => {
-      const card = createPairCard(pair);
-      container.appendChild(card);
-    });
+    // Выделяем текущие и предстоящие пары на сегодня
+    if (dateStr === todayStr) {
+      const mskNow = getMskNow();
+      const currentPairs = [];
+      const futurePairs = [];
+      
+      map[dateStr].forEach(pair => {
+        const pairStart = new Date(`${todayStr.split('.').reverse().join('-')}T${pair.startTime}`);
+        const pairEnd = new Date(`${todayStr.split('.').reverse().join('-')}T${pair.endTime}`);
+        
+        if (pairEnd <= mskNow) {
+          // Закончившаяся пара
+          const card = createPairCard(pair);
+          card.classList.add('past-pair');
+          currentPairs.push(card);
+        } else if (pairStart <= mskNow && pairEnd > mskNow) {
+          // Текущая пара
+          const card = createPairCard(pair);
+          card.classList.add('current-active-pair');
+          currentPairs.push(card);
+        } else {
+          // Будущая пара
+          futurePairs.push(createPairCard(pair));
+        }
+      });
+      
+      // Добавляем пары в контейнер в правильном порядке
+      currentPairs.forEach(card => container.appendChild(card));
+      futurePairs.forEach(card => container.appendChild(card));
+    } else {
+      // Для других дней просто выводим все пары
+      map[dateStr].forEach(pair => {
+        container.appendChild(createPairCard(pair));
+      });
+    }
   });
 }
 
@@ -394,10 +425,9 @@ function getRemainingWeekSchedule(fullSchedule) {
       return true;
     }
     
-    // Если сегодня, то проверяем время
+    // Если сегодня, то оставляем все (и прошедшие, и будущие)
     if (pair.date === todayStr) {
-      const startTime = new Date(`${todayStr.split('.').reverse().join('-')}T${pair.startTime}`);
-      return startTime > mskNow;
+      return true;
     }
     
     return false;

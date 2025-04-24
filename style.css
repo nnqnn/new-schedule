@@ -167,6 +167,41 @@ button:hover {
   background-color: #444;
 }
 
+/* Прошедшие пары */
+.card.past-pair {
+  opacity: 0.65;
+  position: relative;
+}
+
+.card.past-pair::after {
+  content: "";
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 0.8rem;
+  color: #aaa;
+  font-style: italic;
+}
+
+/* Текущая активная пара */
+.card.current-active-pair {
+  border: 2px solid #6d8ecc;
+  position: relative;
+}
+
+.card.current-active-pair::after {
+  content: "сейчас";
+  position: absolute;
+  top: 10px;
+  right: 10px;
+  font-size: 0.8rem;
+  color: #6d8ecc;
+  font-weight: bold;
+  background: rgba(109, 142, 204, 0.2);
+  padding: 2px 6px;
+  border-radius: 3px;
+}
+
 /* Вывод порядкового номера пары */
 .card .order {
   font-weight: bold;
