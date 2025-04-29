@@ -106,6 +106,7 @@ async function loadSchedule(group, week = '0') {
       currentAutoSchedule = result;
       currentPartialView = true;
       renderAutoSchedule(result);
+      updateHeaderButtonText();
 
     } else {
       // Любая другая неделя: показываем полное расписание
