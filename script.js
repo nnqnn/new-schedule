@@ -552,7 +552,7 @@ function createPairCard(pair) {
     card.classList.add("non-academic");
   }
 
-  card.style.backgroundImage = getGradient(pair.color);
+  card.style.backgroundImage = getGradient(pair.color, pair.groupType);
 
   const order = getPairOrder(pair);
   let orderHTML = '';
@@ -583,13 +583,24 @@ function createPairCard(pair) {
 /**
  * Фон-градиент (более тёмный) в зависимости от pair.color
  */
-function getGradient(color) {
+function getGradient(color, groupType) {
   if (color === 'sky') {
-    return "linear-gradient(135deg, #6d8ecc, #4d6ecf)";
+    return "linear-gradient(135deg, #6d8ecc, #4d6ecf)"; // Цвет практик
   } else if (color === 'teal') {
-    return "linear-gradient(135deg, #5ead97, #4b9d7b)";
+    return "linear-gradient(135deg, #5ead97, #4b9d7b)"; // Цвет лекций
   } else if (color === 'none') {
-    return "#444";
+    // Проверяем тип пары
+    if (groupType === 'Внеучебное мероприятие') {
+      return "linear-gradient(135deg, #c28708, #ad7f1c)"; // Цвет внеучебки
+    } else if (
+        groupType === 'Экзамен' ||
+        groupType === 'Зачет' ||
+        groupType === 'Зачет дифференцированный'
+    ) {
+      return "linear-gradient(135deg, #cb2d3e, #ca6613)"; // Цвет зачетов
+    } else {
+      return "#444"; // Серый по умолчанию
+    }
   }
   return "#444";
 }
