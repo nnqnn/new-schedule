@@ -585,13 +585,13 @@ function createPairCard(pair) {
  */
 function getGradient(color, groupType) {
   if (color === 'sky') {
-    return "linear-gradient(135deg, #6d8ecc, #4d6ecf)"; // Цвет практик
+    return "linear-gradient(135deg, #3E61A0, #2E57D3)"; // Цвет практик
   } else if (color === 'teal') {
-    return "linear-gradient(135deg, #5ead97, #4b9d7b)"; // Цвет лекций
+    return "linear-gradient(135deg, #378C74, #2C7F5C)"; // Цвет лекций
   } else if (color === 'none') {
     // Проверяем тип пары
     if (groupType === 'Внеучебное мероприятие') {
-      return "linear-gradient(135deg, #c28708, #ad7f1c)"; // Цвет внеучебки
+      return "linear-gradient(135deg, #cc810e, #bf7404)"; // Цвет внеучебки
     } else if (
         groupType === 'Экзамен' ||
         groupType === 'Зачет' ||
