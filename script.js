@@ -596,10 +596,10 @@ function getGradient(color, groupType) {
     // Проверяем тип пары
     if (groupType === 'Внеучебное мероприятие') {
       return "linear-gradient(135deg, #cc810e, #bf7404)"; // Цвет внеучебки
-    } else if (
-        groupType === 'Зачет дифференцированный'
-    ) {
+    } else if (groupType === 'Зачет дифференцированный') {
       return "linear-gradient(135deg, #cb2d3e, #ca6613)"; // Цвет зачетов
+    } else if (groupType === 'Контрольная работа') {
+      return "linear-gradient(135deg, #cc810e, #bf7404)";
     } else {
       return "#444"; // Серый по умолчанию
     }
