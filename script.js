@@ -371,8 +371,10 @@ function renderRemainingSchedule() {
   const sortedDates = Object.keys(map).sort(compareDates);
 
   sortedDates.forEach(dateStr => {
+    // Получаем день недели из первой пары этого дня
+    const dayWeek = map[dateStr][0]?.dayWeek ? ` (${map[dateStr][0].dayWeek})` : '';
     const dayHeader = document.createElement('h3');
-    dayHeader.textContent = dateStr + (dateStr === todayStr ? ' (сегодня)' : '');
+    dayHeader.textContent = dateStr + dayWeek + (dateStr === todayStr ? ' (сегодня)' : '');
     container.appendChild(dayHeader);
 
     // Выделяем текущие и предстоящие пары на сегодня
@@ -519,7 +521,7 @@ function renderFullWeek(schedule) {
   document.body.classList.remove('current-pair', 'next-pair');
 
   if (!schedule || schedule.length === 0) {
-    container.innerHTML = '<div class="card">Нет пар на оставшуюся неделю</div>';
+    container.innerHTML = '<div class="card">Нет отображаемых пар</div>';
     dateContainer.textContent = '';
     return;
   }
@@ -527,11 +529,23 @@ function renderFullWeek(schedule) {
   const map = groupByDate(schedule);
   const sortedDates = Object.keys(map).sort(compareDates);
 
-  dateContainer.textContent = 'Расписание на оставшуюся неделю';
+  // Определяем текст заголовка в зависимости от выбранной недели
+  const week = localStorage.getItem('week');
+  let headerText = 'Расписание на выбранную неделю';
+  
+  if (week === '1') {
+    headerText = 'Расписание на следующую неделю';
+  } else if (week === '-1') {
+    headerText = 'Расписание на предыдущую неделю';
+  }
+
+  dateContainer.textContent = headerText;
 
   sortedDates.forEach(dateStr => {
+    // Получаем день недели из первой пары этого дня
+    const dayWeek = map[dateStr][0]?.dayWeek ? ` (${map[dateStr][0].dayWeek})` : '';
     const dayHeader = document.createElement('h3');
-    dayHeader.textContent = dateStr;
+    dayHeader.textContent = dateStr + dayWeek;
     container.appendChild(dayHeader);
 
     map[dateStr].forEach(pair => {
