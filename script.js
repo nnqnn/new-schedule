@@ -599,7 +599,7 @@ function getGradient(color, groupType) {
     } else if (groupType === 'Зачет дифференцированный') {
       return "linear-gradient(135deg, #cb2d3e, #ca6613)"; // Цвет зачетов
     } else if (groupType === 'Контрольная работа') {
-      return "linear-gradient(135deg, #cc810e, #bf7404)";
+      return "linear-gradient(135deg, #cb2d3e, #ca6613)";
     } else {
       return "#444"; // Серый по умолчанию
     }
