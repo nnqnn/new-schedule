@@ -588,13 +588,15 @@ function getGradient(color, groupType) {
     return "linear-gradient(135deg, #3E61A0, #2E57D3)"; // Цвет практик
   } else if (color === 'teal') {
     return "linear-gradient(135deg, #378C74, #2C7F5C)"; // Цвет лекций
-  } else if (color === 'none') {
+  } 
+  else if (color === 'pink') {
+    return "linear-gradient(135deg, #cb2d3e, #ca6613)";
+  }
+  else if (color === 'none') {
     // Проверяем тип пары
     if (groupType === 'Внеучебное мероприятие') {
       return "linear-gradient(135deg, #cc810e, #bf7404)"; // Цвет внеучебки
     } else if (
-        groupType === 'Экзамен' ||
-        groupType === 'Зачет' ||
         groupType === 'Зачет дифференцированный'
     ) {
       return "linear-gradient(135deg, #cb2d3e, #ca6613)"; // Цвет зачетов
