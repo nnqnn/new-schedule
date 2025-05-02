@@ -17,6 +17,37 @@ let scheduleCache = {};
 // Время последнего обновления кэша
 let lastCacheUpdate = 0;
 
+// Список групп (из вашего примера)
+const GROUPS = [
+  "К0709-23/1",
+  "К0709-23/2",
+  "К0709-23/3",
+  "К0709-24/1",
+  "К0709-24/2",
+  "К0109-23",
+  "К0609-23",
+  "К0409-23",
+  "К0711-23",
+  "К0611-23",
+  "К0411-23",
+  "К0709-22",
+  "К0609-22",
+  "К0409-22",
+  "К0109-22",
+  "К1609-22/1",
+  "К1609-22/2",
+  "К0711-22",
+  "К0411-22",
+  "К0611-22",
+  "К0111-22",
+  "К0609-24",
+  "К0109-24",
+  "К0409-24/1",
+  "К0409-24/2",
+  "К1609-24/1",
+  "К1609-24/2"
+];
+
 // Функция для получения расписания из API
 async function fetchScheduleFromAPI(group, week) {
     const client = new sirinium.Client();
@@ -29,16 +60,8 @@ async function fetchScheduleFromAPI(group, week) {
 async function updateCache() {
     try {
         console.log('Обновление кэша расписания...');
-        const groups = [
-            'К0709-23/1', 'К0709-23/2', 'К0709-23/3', 'К0709-24/1', 'К0709-24/2',
-            'К0109-23', 'К0609-23', 'К0409-23', 'К0711-23', 'К0611-23', 'К0411-23',
-            'К0709-22', 'К0609-22', 'К0409-22', 'К0109-22', 'К1609-22/1', 'К1609-22/2',
-            'К0711-22', 'К0411-22', 'К0611-22', 'К0111-22', 'К0609-24', 'К0109-24',
-            'К0409-24/1', 'К0409-24/2', 'К1609-24/1', 'К1609-24/2'
-        ];
-
         const newCache = {};
-        for (const group of groups) {
+        for (const group of GROUPS) {
             try {
                 newCache[group] = await fetchScheduleFromAPI(group, 0);
             } catch (error) {
@@ -100,6 +123,15 @@ app.get('/api/schedule', async (req, res) => {
         }
     } catch (error) {
         res.status(500).json({ error: error.message });
+    }
+});
+
+// Эндпоинт для получения списка групп
+app.get('/api/groups', (req, res) => {
+    try {
+        res.json(GROUPS);
+    } catch (error) {
+        res.status(500).json({ error: 'Не удалось получить список групп' });
     }
 });
 
