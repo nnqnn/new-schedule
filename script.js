@@ -1,14 +1,14 @@
 document.addEventListener('DOMContentLoaded', () => {
-  const group = localStorage.getItem('group');
+  const teacher = localStorage.getItem('teacher');
   const week = localStorage.getItem('week') || '0';
 
   // При загрузке страницы — если группа уже сохранена, сразу показываем расписание
-  if (group) {
-    document.getElementById('groupSelect').value = group;
+  if (teacher) {
+    document.getElementById('teacherSelect').value = teacher;
     document.getElementById('mainPage').style.display = 'none';
     document.getElementById('scheduleView').style.display = 'block';
-    document.getElementById('groupNameLink').textContent = group;
-    loadSchedule(group, week);
+    document.getElementById('teacherNameLink').textContent = teacher;
+    loadSchedule(teacher, week);
   } else {
     document.getElementById('mainPage').style.display = 'block';
     document.getElementById('scheduleView').style.display = 'none';
@@ -16,28 +16,28 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Кнопка "Показать" на главной
   document.getElementById('showScheduleBtn').addEventListener('click', () => {
-    const selectedGroup = document.getElementById('groupSelect').value;
+    const selectedTeacher = document.getElementById('teacherSelect').value;
     const selectedWeek = document.getElementById('weekSelect').value;
-    if (!selectedGroup) return;
+    if (!selectedTeacher) return;
 
-    localStorage.setItem('group', selectedGroup);
+    localStorage.setItem('teacher', selectedTeacher);
     localStorage.setItem('week', selectedWeek);
 
     document.getElementById('mainPage').style.display = 'none';
     document.getElementById('scheduleView').style.display = 'block';
-    document.getElementById('groupNameLink').textContent = selectedGroup;
+    document.getElementById('teacherNameLink').textContent = selectedTeacher;
 
-    loadSchedule(selectedGroup, selectedWeek);
+    loadSchedule(selectedTeacher, selectedWeek);
   });
 
   // Клик по названию группы в шапке — вернуться к выбору
-  document.getElementById('groupNameLink').addEventListener('click', (e) => {
+  document.getElementById('teacherNameLink').addEventListener('click', (e) => {
     e.preventDefault();
     document.getElementById('mainPage').style.display = 'block';
     document.getElementById('scheduleView').style.display = 'none';
-    const storedGroup = localStorage.getItem('group');
-    if (storedGroup) {
-      document.getElementById('groupSelect').value = storedGroup;
+    const storedTeacher = localStorage.getItem('teacher');
+    if (storedTeacher) {
+      document.getElementById('teacherSelect').value = storedTeacher;
     }
   });
 
@@ -58,7 +58,7 @@ let currentPartialView = true;
  * Загружаем расписание с API и отображаем.
  * Если week!=0, скрываем универсальную кнопку и показываем всё расписание за эту неделю.
  */
-async function loadSchedule(group, week = '0') {
+async function loadSchedule(teacher, week = '0') {
   // Скрыть/показать "универсальную" кнопку в шапке в зависимости от week
   const toggleBtn = document.getElementById('toggleScheduleBtn');
   if (week !== '0') {
@@ -68,7 +68,7 @@ async function loadSchedule(group, week = '0') {
   }
 
   try {
-    const response = await fetch(`https://api.eralas.ru/api/schedule?group=${group}&week=${week}`);
+    const response = await fetch(`https://apit.eralas.ru/api/schedule?teacher=${teacher}&week=${week}`);
     if (!response.ok) throw new Error('Ошибка сети');
     let schedule = await response.json();
 
@@ -78,7 +78,7 @@ async function loadSchedule(group, week = '0') {
 
       // Если на этой неделе пар нет (result.date === ''), пробуем следующую неделю
       if (result.date === '') {
-        const nextResp = await fetch(`https://api.eralas.ru/api/schedule?group=${group}&week=1`);
+        const nextResp = await fetch(`https://api.eralas.ru/api/schedule?teacher=${teacher}&week=1`);
         if (nextResp.ok) {
           const nextWeekSchedule = await nextResp.json();
           if (nextWeekSchedule.length > 0) {

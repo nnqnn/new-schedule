@@ -3,9 +3,146 @@ const sirinium = require('sirinium');
 const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
+const utils = require('./utils');
 
 const app = express();
 app.use(cors());
+
+class ourparser {
+    constructor(domain, mainGrid) {
+        this.url = domain;
+        this.mainGridUrl = mainGrid;
+    }
+
+    async getInitialData() {
+        const response = await fetch(this.url, { credentials: "same-origin" });
+        this.xsrfToken = await utils.getXsrfToken(response);
+        this.sessionToken = await utils.getSessionToken(response);
+
+
+        const body = await response.text();
+        const initialData = await utils.parseInitialData(body);
+        this.data = initialData;
+
+        this.wireToken = await utils.getWireToken(body);
+
+        await this.emulateResize(1920, 1080); // Redundant, but why not?
+
+        return initialData;
+    }
+
+    async getGroupSchedule(group) {
+        const data = await this.sendUpdates(
+            [utils.getCallMethodUpdateObject("set", [group])]
+        );
+
+        return await utils.getArrayOfEvents(data);
+    }
+
+    async getTeacherSchedule(teacher){
+        const data = await this.sendUpdates(
+            [utils.getCallMethodUpdateObject("set", [teacher])]
+        );
+
+        return await utils.getArrayOfEvents(data);
+    }
+
+    async emulateResize(width, height) {
+        const data = await this.sendUpdates([
+            utils.getCallMethodUpdateObject("render"),
+            utils.getCallMethodUpdateObject("$set", ["width", width]),
+            utils.getCallMethodUpdateObject("$set", ["height", height]),
+        ]);
+
+        this.data.serverMemo.data.width = data.serverMemo.data.width;
+        this.data.serverMemo.data.height = data.serverMemo.data.height;
+        this.data.serverMemo.checksum = data.serverMemo.checksum;
+
+        return true;
+    }
+
+    async changeWeek(step) {
+        const method = step > 0 ? "addWeek" : "minusWeek";
+        for (let i = 0; i < Math.abs(step); i++) {
+            const data = await this.sendUpdates([utils.getCallMethodUpdateObject(method)]);
+
+            Object.assign(this.data.serverMemo.data, data.serverMemo.data);
+
+            this.data.serverMemo.checksum = data.serverMemo.checksum;
+            this.data.serverMemo.htmlHash = data.serverMemo.htmlHash;
+        }
+
+        return true;
+    }
+
+    async sendUpdates(updates) {
+        const data = await fetch(this.mainGridUrl, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: this.getHeaders(),
+            body: JSON.stringify({
+                ...this.getInitialBody(),
+                updates: updates
+            })
+        });
+
+        return await data.json();
+    }
+
+    getInitialBody() {
+        return {
+            fingerprint: this.data["fingerprint"],
+            serverMemo: this.data["serverMemo"]
+        };
+    }
+
+    getHeaders() {
+        return {
+            "Cookie": `XSRF-TOKEN=${this.xsrfToken};raspisanie_universitet_sirius_session=${this.sessionToken}`,
+
+            "X-Livewire": "true",
+            "X-Csrf-Token": this.wireToken ?? "",
+
+            "Content-Type": "application/json"
+        }
+    }
+}
+
+class Teacher {
+    constructor(options = {}) {
+        this.options = {
+            domain: options.domain ?? "https://schedule.siriusuniversity.ru/teacher",
+            url: "https://schedule.siriusuniversity.ru",
+        };
+
+        this.parser = new ourparser(this.options.domain, "https://schedule.siriusuniversity.ru/livewire/message/teachers.teacher-main-grid");
+
+    }
+
+    async getSchedule(teacher){
+
+        return await this.parser.getTeacherSchedule(teacher).catch((e) =>{
+            throw new Error(e);
+        });
+    }
+
+    async getInitialData() {
+        await this.parser.getInitialData().catch((e) => {
+            throw new Error("Can't get inital data: " + e);
+        });
+
+        return true;
+    }
+
+    async changeWeek(step) {
+        if (!Number.isInteger(step) || step === 0) return;
+
+        await this.parser.changeWeek(step).catch((e) => {
+            throw new Error("Can't change week: " + e);
+        });
+    }
+
+}
 
 // Путь к файлу кэша
 const CACHE_FILE = path.join(__dirname, 'schedule_cache.json');
@@ -17,43 +154,19 @@ let scheduleCache = {};
 // Время последнего обновления кэша
 let lastCacheUpdate = 0;
 
-// Список групп (из вашего примера)
-const GROUPS = [
-  "К0709-23/1",
-  "К0709-23/2",
-  "К0709-23/3",
-  "К0709-24/1",
-  "К0709-24/2",
-  "К0109-23",
-  "К0609-23",
-  "К0409-23",
-  "К0711-23",
-  "К0611-23",
-  "К0411-23",
-  "К0709-22",
-  "К0609-22",
-  "К0409-22",
-  "К0109-22",
-  "К1609-22/1",
-  "К1609-22/2",
-  "К0711-22",
-  "К0411-22",
-  "К0611-22",
-  "К0111-22",
-  "К0609-24",
-  "К0109-24",
-  "К0409-24/1",
-  "К0409-24/2",
-  "К1609-24/1",
-  "К1609-24/2"
+// Список преподователей
+const TEACHERS = [
+    "d62673b2-171e-4b09-9316-b089a6c727c1"// Биккинина Элина Рамилевна
 ];
 
+
+
 // Функция для получения расписания из API
-async function fetchScheduleFromAPI(group, week) {
-    const client = new sirinium.Client();
+async function fetchScheduleFromAPI(teacher, week) {
+    const client = new Teacher();
     await client.getInitialData();
     await client.changeWeek(Number(week));
-    return await client.getGroupSchedule(group);
+    return await client.getSchedule(teacher);
 }
 
 // Функция для обновления кэша
@@ -61,11 +174,11 @@ async function updateCache() {
     try {
         console.log('Обновление кэша расписания...');
         const newCache = {};
-        for (const group of GROUPS) {
+        for (const teacher of TEACHERS) {
             try {
-                newCache[group] = await fetchScheduleFromAPI(group, 0);
+                newCache[teacher] = await fetchScheduleFromAPI(teacher, 0);
             } catch (error) {
-                console.error(`Ошибка при получении расписания для группы ${group}:`, error);
+                console.error(`Ошибка при получении расписания для преподователя с айди ${teacher}:`, error);
             }
         }
 
@@ -97,7 +210,7 @@ setInterval(updateCache, CACHE_UPDATE_INTERVAL);
 
 app.get('/api/schedule', async (req, res) => {
     try {
-        const { group, week = 0 } = req.query;
+        const { teacher, week = 0 } = req.query;
 
         // Если запрашивается текущая неделя (week=0), используем кэш
         if (week === '0') {
@@ -106,19 +219,19 @@ app.get('/api/schedule', async (req, res) => {
                 await updateCache();
             }
 
-            // Проверяем наличие данных для запрошенной группы
-            if (scheduleCache[group]) {
-                return res.json(scheduleCache[group]);
+            // Проверяем наличие данных для запрошенного айди преподователя
+            if (scheduleCache[teacher]) {
+                return res.json(scheduleCache[teacher]);
             } else {
                 // Если данных нет в кэше, получаем их из API
-                const schedule = await fetchScheduleFromAPI(group, 0);
-                scheduleCache[group] = schedule;
+                const schedule = await fetchScheduleFromAPI(teacher, 0);
+                scheduleCache[teacher] = schedule;
                 await fs.writeFile(CACHE_FILE, JSON.stringify(scheduleCache, null, 2));
                 return res.json(schedule);
             }
         } else {
             // Для других недель получаем данные напрямую из API
-            const schedule = await fetchScheduleFromAPI(group, week);
+            const schedule = await fetchScheduleFromAPI(teacher, week);
             res.json(schedule);
         }
     } catch (error) {
@@ -127,11 +240,11 @@ app.get('/api/schedule', async (req, res) => {
 });
 
 // Эндпоинт для получения списка групп
-app.get('/api/groups', (req, res) => {
+app.get('/api/teachers', (req, res) => {
     try {
-        res.json(GROUPS);
+        res.json(TEACHERS);
     } catch (error) {
-        res.status(500).json({ error: 'Не удалось получить список групп' });
+        res.status(500).json({ error: 'Не удалось получить список преподователей' });
     }
 });
 
