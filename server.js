@@ -156,7 +156,8 @@ let lastCacheUpdate = 0;
 
 // Список преподователей
 const TEACHERS = [
-    "d62673b2-171e-4b09-9316-b089a6c727c1"// Биккинина Элина Рамилевна
+    "d62673b2-171e-4b09-9316-b089a6c727c1" // Биккинина Элина Рамилевна
+    // Дописать айди всех преподавателей
 ];
 
 
@@ -254,5 +255,5 @@ app.get('/', (req, res) => {
 
 // Загружаем кэш при запуске сервера
 loadCache().then(() => {
-    app.listen(3000, '0.0.0.0', () => console.log('Server started on port 3000'));
+    app.listen(4000, '0.0.0.0', () => console.log('Server started on port 4000'));
 });
