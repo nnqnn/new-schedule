@@ -6,6 +6,7 @@ const path = require('path');
 
 const app = express();
 app.use(cors());
+app.use(express.static(__dirname));
 
 // Путь к файлу кэша
 const CACHE_FILE = path.join(__dirname, 'schedule_cache.json');
@@ -136,7 +137,7 @@ app.get('/api/groups', (req, res) => {
 });
 
 app.get('/', (req, res) => {
-    res.send('Сервер работает');
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
 // Загружаем кэш при запуске сервера
