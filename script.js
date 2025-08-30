@@ -68,7 +68,7 @@ async function loadSchedule(group, week = '0') {
   }
 
   try {
-    const response = await fetch(`https://api.eralas.ru/api/schedule?group=${group}&week=${week}`);
+    const response = await fetch(`https://lkssosi.ru/api/schedule?group=${group}&week=${week}`);
     if (!response.ok) throw new Error('Ошибка сети');
     let schedule = await response.json();
 
@@ -78,7 +78,7 @@ async function loadSchedule(group, week = '0') {
 
       // Если на этой неделе пар нет (result.date === ''), пробуем следующую неделю
       if (result.date === '') {
-        const nextResp = await fetch(`https://api.eralas.ru/api/schedule?group=${group}&week=1`);
+        const nextResp = await fetch(`https://lkssosi.ru/api/schedule?group=${group}&week=1`);
         if (nextResp.ok) {
           const nextWeekSchedule = await nextResp.json();
           if (nextWeekSchedule.length > 0) {
