@@ -360,7 +360,7 @@ app.get('/api/teacherschedule', async (req, res) => {
             }
         } else {
             // Для других недель получаем данные напрямую из API
-            const schedule = await fetchScheduleFromAPI(id, week);
+            const schedule = await fetchTeacherScheduleFromAPI(id, week);
             res.json(schedule);
         }
     } catch (error) {
