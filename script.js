@@ -598,7 +598,7 @@ function createPairCard(pair) {
  * Фон-градиент (более тёмный) в зависимости от pair.color
  */
 function getGradient(color, groupType) {
-  if (color === 'sky') {
+  if (color === 'sky' || groupType === 'Семинарские занятия') {
     return "linear-gradient(135deg, #3E61A0, #2E57D3)"; // Цвет практик
   } else if (color === 'teal') {
     return "linear-gradient(135deg, #378C74, #2C7F5C)"; // Цвет лекций
@@ -626,12 +626,14 @@ function getGradient(color, groupType) {
  */
 function getPairOrder(pair) {
   const slots = [
-    { order: 1, start: "09:00", end: "10:30" },
-    { order: 2, start: "10:45", end: "12:15" },
-    { order: 3, start: "13:15", end: "14:45" },
-    { order: 4, start: "15:00", end: "16:30" },
-    { order: 5, start: "16:45", end: "18:15" },
-    { order: 6, start: "18:30", end: "20:00" }
+    { order: 1, start: "08:45", end: "10:05" },
+    { order: 2, start: "10:20", end: "11:40" },
+    { order: 3, start: "11:55", end: "13:15" },
+    { order: 4, start: "13:30", end: "14:50" },
+    { order: 5, start: "15:05", end: "16:25" },
+    { order: 6, start: "16:40", end: "18:00" },
+    { order: 7, start: "18:15", end: "19:35" },
+    { order: 8, start: "19:50", end: "21:10" }
   ];
 
   const pairStart = timeToMinutes(pair.startTime);
