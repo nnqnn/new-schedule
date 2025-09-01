@@ -11,10 +11,32 @@ class ourparser {
     constructor(domain, mainGrid) {
         this.url = domain;
         this.mainGridUrl = mainGrid;
+        try {
+            this.origin = new URL(this.url).origin;
+        } catch (e) {
+            this.origin = "https://schedule.siriusuniversity.ru";
+        }
+    }
+
+    getDefaultHeaders() {
+        return {
+            "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
+            "Accept": "*/*",
+            "Accept-Language": "ru,en;q=0.9",
+            "Connection": "keep-alive",
+            "Referer": this.url
+        };
     }
 
     async getInitialData() {
-        const response = await fetch(this.url, { credentials: "same-origin" });
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
+        const response = await fetch(this.url, {
+            credentials: "same-origin",
+            redirect: "follow",
+            headers: this.getDefaultHeaders(),
+            signal: controller.signal
+        }).finally(() => clearTimeout(timeout));
         this.xsrfToken = await utils.getXsrfToken(response);
         this.sessionToken = await utils.getSessionToken(response);
 
@@ -75,15 +97,18 @@ class ourparser {
     }
 
     async sendUpdates(updates) {
+        const controller = new AbortController();
+        const timeout = setTimeout(() => controller.abort(), 15000);
         const data = await fetch(this.mainGridUrl, {
             method: "POST",
             credentials: "same-origin",
-            headers: this.getHeaders(),
+            headers: { ...this.getDefaultHeaders(), ...this.getHeaders(), Referer: this.url, Origin: this.origin },
             body: JSON.stringify({
                 ...this.getInitialBody(),
                 updates: updates
-            })
-        });
+            }),
+            signal: controller.signal
+        }).finally(() => clearTimeout(timeout));
 
         return await data.json();
     }

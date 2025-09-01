@@ -626,6 +626,7 @@ function getGradient(color, groupType) {
  */
 function getPairOrder(pair) {
   const slots = [
+    { order: 1, start: "08:30", end: "09:50" },
     { order: 1, start: "08:45", end: "10:05" },
     { order: 2, start: "10:20", end: "11:40" },
     { order: 3, start: "11:55", end: "13:15" },
