@@ -4,6 +4,17 @@ const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
 const utils = require('./utils');
+const { setGlobalDispatcher, ProxyAgent, Agent } = require('undici');
+
+// Глобальная настройка undici: форсируем IPv4 и поддерживаем HTTP(S)_PROXY
+try {
+    const proxyUrl = process.env.HTTPS_PROXY || process.env.HTTP_PROXY || process.env.http_proxy || process.env.https_proxy;
+    if (proxyUrl) {
+        setGlobalDispatcher(new ProxyAgent(proxyUrl));
+    } else {
+        setGlobalDispatcher(new Agent({ keepAliveTimeout: 10_000, keepAliveMaxTimeout: 10_000, connect: { family: 4, hints: 0 } }));
+    }
+} catch (_) {}
 
 // парсер переделанный для учителей
 
@@ -31,12 +42,30 @@ class ourparser {
     async getInitialData() {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15000);
-        const response = await fetch(this.url, {
-            credentials: "same-origin",
-            redirect: "follow",
-            headers: this.getDefaultHeaders(),
-            signal: controller.signal
-        }).finally(() => clearTimeout(timeout));
+        const { Agent } = require('undici');
+        const insecureDispatcher = new Agent({ keepAliveTimeout: 10_000, keepAliveMaxTimeout: 10_000, connect: { family: 4, rejectUnauthorized: false } });
+        let response;
+        try {
+            response = await fetch(this.url, {
+                credentials: "same-origin",
+                redirect: "follow",
+                headers: this.getDefaultHeaders(),
+                signal: controller.signal
+            });
+        } catch (e) {
+            response = await fetch(this.url, {
+                credentials: "same-origin",
+                redirect: "follow",
+                headers: this.getDefaultHeaders(),
+                dispatcher: insecureDispatcher,
+                signal: controller.signal
+            });
+        } finally {
+            clearTimeout(timeout);
+        }
+        if (!response.ok) {
+            throw new Error(`HTTP ${response.status}`);
+        }
         this.xsrfToken = await utils.getXsrfToken(response);
         this.sessionToken = await utils.getSessionToken(response);
 
@@ -99,16 +128,38 @@ class ourparser {
     async sendUpdates(updates) {
         const controller = new AbortController();
         const timeout = setTimeout(() => controller.abort(), 15000);
-        const data = await fetch(this.mainGridUrl, {
-            method: "POST",
-            credentials: "same-origin",
-            headers: { ...this.getDefaultHeaders(), ...this.getHeaders(), Referer: this.url, Origin: this.origin },
-            body: JSON.stringify({
-                ...this.getInitialBody(),
-                updates: updates
-            }),
-            signal: controller.signal
-        }).finally(() => clearTimeout(timeout));
+        const { Agent } = require('undici');
+        const insecureDispatcher = new Agent({ keepAliveTimeout: 10_000, keepAliveMaxTimeout: 10_000, connect: { family: 4, rejectUnauthorized: false } });
+        let data;
+        try {
+            data = await fetch(this.mainGridUrl, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { ...this.getDefaultHeaders(), ...this.getHeaders(), Referer: this.url, Origin: this.origin },
+                body: JSON.stringify({
+                    ...this.getInitialBody(),
+                    updates: updates
+                }),
+                signal: controller.signal
+            });
+        } catch (e) {
+            data = await fetch(this.mainGridUrl, {
+                method: "POST",
+                credentials: "same-origin",
+                headers: { ...this.getDefaultHeaders(), ...this.getHeaders(), Referer: this.url, Origin: this.origin },
+                body: JSON.stringify({
+                    ...this.getInitialBody(),
+                    updates: updates
+                }),
+                dispatcher: insecureDispatcher,
+                signal: controller.signal
+            });
+        } finally {
+            clearTimeout(timeout);
+        }
+        if (!data.ok) {
+            throw new Error(`HTTP ${data.status}`);
+        }
 
         return await data.json();
     }
