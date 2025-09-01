@@ -29,6 +29,28 @@ class ourparser {
         }
     }
 
+    async fetchWithRetry(url, options, timeoutMs) {
+        const attempts = parseInt(process.env.FETCH_RETRY_ATTEMPTS || '3', 10);
+        let currentTimeout = parseInt(timeoutMs || process.env.FETCH_TIMEOUT_MS || '45000', 10);
+        for (let attempt = 1; attempt <= attempts; attempt++) {
+            const controller = new AbortController();
+            const timer = setTimeout(() => controller.abort(), currentTimeout);
+            try {
+                const { Agent } = require('undici');
+                const dispatcher = attempt === 1 ? undefined : new Agent({ keepAliveTimeout: 10_000, keepAliveMaxTimeout: 10_000, connect: { family: 4, rejectUnauthorized: false, hints: 0 } });
+                const response = await fetch(url, { ...options, signal: controller.signal, dispatcher });
+                if (!response.ok) throw new Error(`HTTP ${response.status}`);
+                return response;
+            } catch (err) {
+                if (attempt === attempts) throw err;
+                await new Promise(r => setTimeout(r, 500 * attempt));
+                currentTimeout = Math.floor(currentTimeout * 1.5);
+            } finally {
+                clearTimeout(timer);
+            }
+        }
+    }
+
     getDefaultHeaders() {
         return {
             "User-Agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/126.0.0.0 Safari/537.36",
@@ -40,32 +62,11 @@ class ourparser {
     }
 
     async getInitialData() {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
-        const { Agent } = require('undici');
-        const insecureDispatcher = new Agent({ keepAliveTimeout: 10_000, keepAliveMaxTimeout: 10_000, connect: { family: 4, rejectUnauthorized: false } });
-        let response;
-        try {
-            response = await fetch(this.url, {
-                credentials: "same-origin",
-                redirect: "follow",
-                headers: this.getDefaultHeaders(),
-                signal: controller.signal
-            });
-        } catch (e) {
-            response = await fetch(this.url, {
-                credentials: "same-origin",
-                redirect: "follow",
-                headers: this.getDefaultHeaders(),
-                dispatcher: insecureDispatcher,
-                signal: controller.signal
-            });
-        } finally {
-            clearTimeout(timeout);
-        }
-        if (!response.ok) {
-            throw new Error(`HTTP ${response.status}`);
-        }
+        const response = await this.fetchWithRetry(this.url, {
+            credentials: "same-origin",
+            redirect: "follow",
+            headers: this.getDefaultHeaders()
+        }, parseInt(process.env.FETCH_TIMEOUT_MS || '45000', 10));
         this.xsrfToken = await utils.getXsrfToken(response);
         this.sessionToken = await utils.getSessionToken(response);
 
@@ -126,40 +127,15 @@ class ourparser {
     }
 
     async sendUpdates(updates) {
-        const controller = new AbortController();
-        const timeout = setTimeout(() => controller.abort(), 15000);
-        const { Agent } = require('undici');
-        const insecureDispatcher = new Agent({ keepAliveTimeout: 10_000, keepAliveMaxTimeout: 10_000, connect: { family: 4, rejectUnauthorized: false } });
-        let data;
-        try {
-            data = await fetch(this.mainGridUrl, {
-                method: "POST",
-                credentials: "same-origin",
-                headers: { ...this.getDefaultHeaders(), ...this.getHeaders(), Referer: this.url, Origin: this.origin },
-                body: JSON.stringify({
-                    ...this.getInitialBody(),
-                    updates: updates
-                }),
-                signal: controller.signal
-            });
-        } catch (e) {
-            data = await fetch(this.mainGridUrl, {
-                method: "POST",
-                credentials: "same-origin",
-                headers: { ...this.getDefaultHeaders(), ...this.getHeaders(), Referer: this.url, Origin: this.origin },
-                body: JSON.stringify({
-                    ...this.getInitialBody(),
-                    updates: updates
-                }),
-                dispatcher: insecureDispatcher,
-                signal: controller.signal
-            });
-        } finally {
-            clearTimeout(timeout);
-        }
-        if (!data.ok) {
-            throw new Error(`HTTP ${data.status}`);
-        }
+        const data = await this.fetchWithRetry(this.mainGridUrl, {
+            method: "POST",
+            credentials: "same-origin",
+            headers: { ...this.getDefaultHeaders(), ...this.getHeaders(), Referer: this.url, Origin: this.origin },
+            body: JSON.stringify({
+                ...this.getInitialBody(),
+                updates: updates
+            })
+        }, parseInt(process.env.FETCH_TIMEOUT_MS || '45000', 10));
 
         return await data.json();
     }
