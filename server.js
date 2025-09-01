@@ -32,16 +32,34 @@ class ourparser {
     async fetchWithRetry(url, options, timeoutMs) {
         const attempts = parseInt(process.env.FETCH_RETRY_ATTEMPTS || '3', 10);
         let currentTimeout = parseInt(timeoutMs || process.env.FETCH_TIMEOUT_MS || '45000', 10);
+        const forceInsecure = String(process.env.FETCH_INSECURE_TLS || '').toLowerCase() === '1' || String(process.env.FETCH_INSECURE_TLS || '').toLowerCase() === 'true';
         for (let attempt = 1; attempt <= attempts; attempt++) {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), currentTimeout);
             try {
                 const { Agent } = require('undici');
-                const dispatcher = attempt === 1 ? undefined : new Agent({ keepAliveTimeout: 10_000, keepAliveMaxTimeout: 10_000, connect: { family: 4, rejectUnauthorized: false, hints: 0 } });
+                const dispatcher = (!forceInsecure && attempt === 1) ? undefined : new Agent({ keepAliveTimeout: 10_000, keepAliveMaxTimeout: 10_000, connect: { family: 4, rejectUnauthorized: false, hints: 0 } });
                 const response = await fetch(url, { ...options, signal: controller.signal, dispatcher });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response;
             } catch (err) {
+                if (process.env.DEBUG_FETCH) {
+                    const cause = err && err.cause ? err.cause : {};
+                    console.error('[server ourparser] fetch attempt failed', {
+                        attempt,
+                        attempts,
+                        url,
+                        timeoutMs: currentTimeout,
+                        name: err?.name,
+                        message: err?.message,
+                        code: cause?.code,
+                        errno: cause?.errno,
+                        syscall: cause?.syscall,
+                        host: cause?.host,
+                        address: cause?.address,
+                        port: cause?.port
+                    });
+                }
                 if (attempt === attempts) throw err;
                 await new Promise(r => setTimeout(r, 500 * attempt));
                 currentTimeout = Math.floor(currentTimeout * 1.5);
@@ -252,11 +270,37 @@ async function updateCache() {
     try {
         console.log('Обновление кэша расписания...');
         const newCache = {};
+
+        // Инициализируем один клиент и переиспользуем его для всех групп
+        let client;
+        try {
+            client = new sirinium.Client();
+            await client.getInitialData();
+            await client.changeWeek(0);
+        } catch (e) {
+            console.error('Не удалось инициализировать клиент для групп:', e);
+            return;
+        }
+
+        const delayMs = parseInt(process.env.BATCH_DELAY_MS || '250', 10);
         for (const group of GROUPS) {
             try {
-                newCache[group] = await fetchScheduleFromAPI(group, 0);
+                newCache[group] = await client.getGroupSchedule(group);
             } catch (error) {
-                console.error(`Ошибка при получении расписания для группы ${group}:`, error);
+                const cause = error && error.cause ? error.cause : {};
+                console.error(`Ошибка при получении расписания для группы ${group}:`, {
+                    name: error?.name,
+                    message: error?.message,
+                    code: cause?.code,
+                    errno: cause?.errno,
+                    syscall: cause?.syscall,
+                    host: cause?.host,
+                    address: cause?.address,
+                    port: cause?.port
+                });
+            }
+            if (delayMs > 0) {
+                await new Promise(r => setTimeout(r, delayMs));
             }
         }
 
@@ -285,11 +329,37 @@ async function updateTeachersCache() {
         console.log('Обновление кэша преподавателей...');
         const newCache = {};
         const teacherIds = TEACHERS && typeof TEACHERS === 'object' && !Array.isArray(TEACHERS) ? Object.keys(TEACHERS) : TEACHERS;
+
+        // Один клиент для всех преподавателей
+        let client;
+        try {
+            client = new Teacher();
+            await client.getInitialData();
+            await client.changeWeek(0);
+        } catch (e) {
+            console.error('Не удалось инициализировать клиент для преподавателей:', e);
+            return;
+        }
+
+        const delayMs = parseInt(process.env.BATCH_DELAY_MS || '250', 10);
         for (const teacherId of teacherIds) {
             try {
-                newCache[teacherId] = await fetchTeacherScheduleFromAPI(teacherId, 0);
+                newCache[teacherId] = await client.getSchedule(teacherId);
             } catch (error) {
-                console.error(`Ошибка при получении расписания для преподавателя ${teacherId}:`, error);
+                const cause = error && error.cause ? error.cause : {};
+                console.error(`Ошибка при получении расписания для преподавателя ${teacherId}:`, {
+                    name: error?.name,
+                    message: error?.message,
+                    code: cause?.code,
+                    errno: cause?.errno,
+                    syscall: cause?.syscall,
+                    host: cause?.host,
+                    address: cause?.address,
+                    port: cause?.port
+                });
+            }
+            if (delayMs > 0) {
+                await new Promise(r => setTimeout(r, delayMs));
             }
         }
         // Сохраняем кэш в файл

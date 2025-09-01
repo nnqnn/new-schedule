@@ -15,15 +15,33 @@ class Parser {
     async fetchWithRetry(url, options, timeoutMs) {
         const attempts = parseInt(process.env.FETCH_RETRY_ATTEMPTS || '3', 10);
         let currentTimeout = parseInt(timeoutMs || process.env.FETCH_TIMEOUT_MS || '45000', 10);
+        const forceInsecure = String(process.env.FETCH_INSECURE_TLS || '').toLowerCase() === '1' || String(process.env.FETCH_INSECURE_TLS || '').toLowerCase() === 'true';
         for (let attempt = 1; attempt <= attempts; attempt++) {
             const controller = new AbortController();
             const timer = setTimeout(() => controller.abort(), currentTimeout);
             try {
-                const dispatcher = attempt === 1 ? undefined : new Agent({ keepAliveTimeout: 10_000, keepAliveMaxTimeout: 10_000, connect: { family: 4, rejectUnauthorized: false, hints: 0 } });
+                const dispatcher = (!forceInsecure && attempt === 1) ? undefined : new Agent({ keepAliveTimeout: 10_000, keepAliveMaxTimeout: 10_000, connect: { family: 4, rejectUnauthorized: false, hints: 0 } });
                 const response = await fetch(url, { ...options, signal: controller.signal, dispatcher });
                 if (!response.ok) throw new Error(`HTTP ${response.status}`);
                 return response;
             } catch (err) {
+                if (process.env.DEBUG_FETCH) {
+                    const cause = err && err.cause ? err.cause : {};
+                    console.error('[sirinium] fetch attempt failed', {
+                        attempt,
+                        attempts,
+                        url,
+                        timeoutMs: currentTimeout,
+                        name: err?.name,
+                        message: err?.message,
+                        code: cause?.code,
+                        errno: cause?.errno,
+                        syscall: cause?.syscall,
+                        host: cause?.host,
+                        address: cause?.address,
+                        port: cause?.port
+                    });
+                }
                 if (attempt === attempts) throw err;
                 await new Promise(r => setTimeout(r, 500 * attempt));
                 currentTimeout = Math.floor(currentTimeout * 1.5);
