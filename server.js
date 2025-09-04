@@ -226,6 +226,8 @@ const CACHE_FILE = path.join(__dirname, 'schedule_cache.json');
 const TEACHERS_CACHE_FILE = path.join(__dirname, 'teachers_cache.json');
 // Интервал обновления кэша (200 секунд)
 const CACHE_UPDATE_INTERVAL = 200 * 1000;
+// Директория для файлового кэша по группам
+const GROUP_CACHE_DIR = path.join(__dirname, 'groups_cache');
 
 
 // Объект для хранения кэша в памяти
@@ -234,6 +236,10 @@ let scheduleCache = {};
 // Время последнего обновления кэша
 let lastCacheUpdate = 0;
 
+// Безопасное имя файла на основе идентификатора группы
+function sanitizeFileName(name) {
+    return String(name).replace(/[^a-zA-Z0-9\u0400-\u04FF._-]/g, '_');
+}
 
 // Функция для получения расписания из API
 async function fetchScheduleFromAPI(group, week) {
@@ -282,7 +288,8 @@ async function updateCache() {
             return;
         }
 
-        const delayMs = parseInt(process.env.BATCH_DELAY_MS || '250', 10);
+        const delayMs = parseInt(process.env.BATCH_DELAY_MS || '120000', 10);
+        let failed = false;
         for (const group of GROUPS) {
             try {
                 newCache[group] = await client.getGroupSchedule(group);
@@ -298,13 +305,34 @@ async function updateCache() {
                     address: cause?.address,
                     port: cause?.port
                 });
+                // При ошибке прерываем цикл и возвращаемся к существующему кэшу
+                failed = true;
+                break;
             }
             if (delayMs > 0) {
                 await new Promise(r => setTimeout(r, delayMs));
             }
         }
 
-        // Сохраняем кэш в файл
+        if (failed) {
+            console.warn('Обновление кэша прервано. Существующий кэш сохранён без изменений.');
+            return;
+        }
+
+        // Убеждаемся, что директория для файлового кэша существует
+        try { await fs.mkdir(GROUP_CACHE_DIR, { recursive: true }); } catch (_) {}
+
+        // Записываем файловый кэш по группам
+        for (const [group, data] of Object.entries(newCache)) {
+            const filePath = path.join(GROUP_CACHE_DIR, `${sanitizeFileName(group)}.json`);
+            try {
+                await fs.writeFile(filePath, JSON.stringify(data, null, 2));
+            } catch (e) {
+                console.error('Не удалось записать файл кэша для группы', group, e?.message);
+            }
+        }
+
+        // Сохраняем общий кэш в файл и в память (только если цикл завершился успешно)
         await fs.writeFile(CACHE_FILE, JSON.stringify(newCache, null, 2));
         scheduleCache = newCache;
         lastCacheUpdate = Date.now();
@@ -408,8 +436,15 @@ app.get('/api/schedule', async (req, res) => {
     try {
         const { group, week = 0 } = req.query;
 
-        // Если запрашивается текущая неделя (week=0), используем кэш
+        // Если запрашивается текущая неделя (week=0), предпочтительно читаем из файлового кэша
         if (week === '0') {
+            try {
+                const filePath = path.join(GROUP_CACHE_DIR, `${sanitizeFileName(group)}.json`);
+                const content = await fs.readFile(filePath, 'utf8');
+                return res.json(JSON.parse(content));
+            } catch (_) {
+                // файла нет или не читается — fallback ниже
+            }
             // Если кэш пустой или устарел, обновляем его
             if (Object.keys(scheduleCache).length === 0 || Date.now() - lastCacheUpdate > CACHE_UPDATE_INTERVAL) {
                 await updateCache();
@@ -423,6 +458,14 @@ app.get('/api/schedule', async (req, res) => {
                 const schedule = await fetchScheduleFromAPI(group, 0);
                 scheduleCache[group] = schedule;
                 await fs.writeFile(CACHE_FILE, JSON.stringify(scheduleCache, null, 2));
+                // Пишем также файловый кэш для группы на будущее
+                try {
+                    await fs.mkdir(GROUP_CACHE_DIR, { recursive: true });
+                    const filePath = path.join(GROUP_CACHE_DIR, `${sanitizeFileName(group)}.json`);
+                    await fs.writeFile(filePath, JSON.stringify(schedule, null, 2));
+                } catch (e) {
+                    console.error('Не удалось записать файл кэша группы после прямого запроса:', e?.message);
+                }
                 return res.json(schedule);
             }
         } else {
