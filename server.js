@@ -226,6 +226,8 @@ const CACHE_FILE = path.join(__dirname, 'schedule_cache.json');
 const TEACHERS_CACHE_FILE = path.join(__dirname, 'teachers_cache.json');
 // Интервал обновления кэша (200 секунд)
 const CACHE_UPDATE_INTERVAL = 200 * 1000;
+// Дополнительная задержка при неудачном обновлении (5 минут)
+const FAILURE_BACKOFF_MS = parseInt(process.env.CACHE_FAILURE_BACKOFF_MS || '300000', 10);
 // Директория для файлового кэша по группам
 const GROUP_CACHE_DIR = path.join(__dirname, 'groups_cache');
 
@@ -285,7 +287,7 @@ async function updateCache() {
             await client.changeWeek(0);
         } catch (e) {
             console.error('Не удалось инициализировать клиент для групп:', e);
-            return;
+            return false; // провал обновления
         }
 
         const delayMs = parseInt(process.env.BATCH_DELAY_MS || '120000', 10);
@@ -316,7 +318,7 @@ async function updateCache() {
 
         if (failed) {
             console.warn('Обновление кэша прервано. Существующий кэш сохранён без изменений.');
-            return;
+            return false; // провал обновления
         }
 
         // Убеждаемся, что директория для файлового кэша существует
@@ -337,8 +339,10 @@ async function updateCache() {
         scheduleCache = newCache;
         lastCacheUpdate = Date.now();
         console.log('Кэш успешно обновлен');
+        return true; // успех
     } catch (error) {
         console.error('Ошибка при обновлении кэша:', error);
+        return false;
     }
 }
 
@@ -366,10 +370,11 @@ async function updateTeachersCache() {
             await client.changeWeek(0);
         } catch (e) {
             console.error('Не удалось инициализировать клиент для преподавателей:', e);
-            return;
+            return false; // провал обновления
         }
 
-        const delayMs = parseInt(process.env.BATCH_DELAY_MS || '250', 10);
+        const delayMs = parseInt(process.env.BATCH_DELAY_MS || '120000', 10);
+        let failed = false;
         for (const teacherId of teacherIds) {
             try {
                 newCache[teacherId] = await client.getSchedule(teacherId);
@@ -385,18 +390,27 @@ async function updateTeachersCache() {
                     address: cause?.address,
                     port: cause?.port
                 });
+                failed = true;
+                break;
             }
             if (delayMs > 0) {
                 await new Promise(r => setTimeout(r, delayMs));
             }
         }
+        if (failed) {
+            console.warn('Обновление кэша преподавателей прервано. Существующий кэш сохранён без изменений.');
+            return false; // провал обновления
+        }
+
         // Сохраняем кэш в файл
         await fs.writeFile(TEACHERS_CACHE_FILE, JSON.stringify(newCache, null, 2));
         teachersCache = newCache;
         lastCacheUpdate = Date.now();
         console.log('Кэш преподавателей успешно обновлен');
+        return true; // успех
     } catch (error) {
         console.error('Ошибка при обновлении кэша преподавателей:', error);
+        return false;
     }
 }
 
@@ -428,9 +442,18 @@ async function loadTeachersCache() {
 }
 
 
-// Запускаем периодическое обновление кэша
-setInterval(updateCache, CACHE_UPDATE_INTERVAL);
-setInterval(updateTeachersCache, CACHE_UPDATE_INTERVAL);
+// Планировщик с бэкоффом: после провала увеличиваем задержку на 5 минут
+async function scheduleGroupUpdate() {
+    const ok = await updateCache();
+    const delay = ok ? CACHE_UPDATE_INTERVAL : (CACHE_UPDATE_INTERVAL + FAILURE_BACKOFF_MS);
+    setTimeout(scheduleGroupUpdate, delay);
+}
+
+async function scheduleTeacherUpdate() {
+    const ok = await updateTeachersCache();
+    const delay = ok ? CACHE_UPDATE_INTERVAL : (CACHE_UPDATE_INTERVAL + FAILURE_BACKOFF_MS);
+    setTimeout(scheduleTeacherUpdate, delay);
+}
 
 app.get('/api/schedule', async (req, res) => {
     try {
@@ -542,6 +565,9 @@ loadGroupsAndTeachers().then(() => {
     loadCache().then(() => {
         loadTeachersCache().then(() => {
             app.listen(3000, '0.0.0.0', () => console.log('Server started on port 3000'));
+            // Запускаем планировщики
+            scheduleGroupUpdate();
+            scheduleTeacherUpdate();
         });
     });
 });
