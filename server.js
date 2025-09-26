@@ -415,7 +415,7 @@ async function updateTeachersCache() {
 }
 
 
-// Загружаем кэш при запуске сервера
+// Загружаем кэш при запуске сервера 
 async function loadCache() {
     try {
         const data = await fs.readFile(CACHE_FILE, 'utf8');
