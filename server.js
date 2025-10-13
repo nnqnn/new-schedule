@@ -4,6 +4,7 @@ const cors = require('cors');
 const fs = require('fs').promises;
 const path = require('path');
 const utils = require('./utils');
+const calendar = require('./calendar');
 const { setGlobalDispatcher, ProxyAgent, Agent } = require('undici');
 
 // Глобальная настройка undici: форсируем IPv4 и поддерживаем HTTP(S)_PROXY
@@ -556,6 +557,27 @@ app.get('/api/teacherschedule', async (req, res) => {
     }
 });
 
+// Эндпоинт для получения календаря группы в формате iCalendar (текущая + следующая недели)
+app.get('/calendar/group', async (req, res) => {
+    try {
+        let { group } = req.query;
+        
+        if (!group) {
+            return res.status(400).json({ error: 'Параметр group обязателен' });
+        }
+
+        // Декодируем группу на случай если она закодирована в URL
+        group = decodeURIComponent(group);
+
+        const icsCalendar = await calendar.getCalendar(group);
+
+        res.setHeader('Content-Type', 'text/calendar; charset=utf-8');
+        res.setHeader('Content-Disposition', `attachment; filename="schedule-${encodeURIComponent(group)}.ics"`);
+        res.send(icsCalendar);
+    } catch (error) {
+        res.status(500).json({ error: error.message });
+    }
+});
 
 
 
