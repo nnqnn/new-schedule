@@ -21,7 +21,6 @@ function formatDateForICS(date) {
  * @returns {string} - Событие в формате iCalendar
  */
 function createICSEvent(event) {
-    // Парсим дату из формата DD.MM.YYYY и время HH:MM
     const [day, month, year] = event.date.split('.');
     const [startHour, startMinute] = event.startTime.split(':');
     const [endHour, endMinute] = event.endTime.split(':');
@@ -39,14 +38,11 @@ function createICSEvent(event) {
             .replace(/\n/g, '\\n');
     };
 
-    // Формируем название события
     const summary = escapeICS(event.discipline || 'Занятие');
     
-    // Формируем location из classroom (убираем символ _)
     const classroom = event.classroom ? event.classroom.replace(/_/g, ' ') : '';
     const location = escapeICS(classroom);
     
-    // Формируем description из преподавателей
     const descriptionParts = [];
     if (event.teachers) {
         const teacherNames = Object.values(event.teachers)
@@ -57,7 +53,6 @@ function createICSEvent(event) {
     if (event.comment) descriptionParts.push(`Комментарий: ${event.comment}`);
     const description = escapeICS(descriptionParts.join('\\n'));
     
-    // Генерируем уникальный ID
     const uid = `${event.date}-${event.startTime}-${event.group || 'schedule'}@schedule`;
 
     return [
@@ -101,29 +96,49 @@ function createICSCalendar(events, calendarName = 'Расписание') {
  * @param {string} group - Название/ID группы
  * @returns {Promise<string>} - Объединенный календарь в формате iCalendar
  */
-async function getCalendar(group) {
+async function getGroupCalendar(group) {
     const client = new sirinium.Client();
     await client.getInitialData();
-    
-    // Получаем расписание текущей недели
+
     await client.changeWeek(0);
     const currentWeek = await client.getGroupSchedule(group);
-    
-    // Переключаемся на следующую неделю
+
     await client.changeWeek(1);
     const nextWeek = await client.getGroupSchedule(group);
-    
-    // Объединяем события
+
     const allEvents = [...currentWeek, ...nextWeek];
     
     return createICSCalendar(allEvents, `Расписание ${group} - 2 недели`);
 }
 
-module.exports = {
-    // Основная функция для получения календаря двух недель
-    getCalendar,
+/**
+ * Получает расписание преподавателя на текущую и следующую недели в одном календаре
+ * @param {string} teacherId - ID преподавателя
+ * @returns {Promise<string>} - Объединенный календарь в формате iCalendar
+ */
+async function getTeacherCalendar(teacherId) {
+    // Импортируем класс Teacher из server.js
+    // Для этого нужно вынести класс Teacher в отдельный файл или использовать его здесь
+    const Teacher = require('./teacher');
     
-    // Вспомогательные функции (экспортируем на случай если понадобятся)
+    const client = new Teacher();
+    await client.getInitialData();
+
+    await client.changeWeek(0);
+    const currentWeek = await client.getSchedule(teacherId);
+
+    await client.changeWeek(1);
+    const nextWeek = await client.getSchedule(teacherId);
+
+    const allEvents = [...currentWeek, ...nextWeek];
+    
+    return createICSCalendar(allEvents, `Расписание преподавателя - 2 недели`);
+}
+
+module.exports = {
+    getGroupCalendar,
+    getTeacherCalendar,
+    
     createICSCalendar,
     createICSEvent,
     formatDateForICS
