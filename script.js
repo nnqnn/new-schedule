@@ -1,3 +1,21 @@
+/**
+ * Определяем базовый URL API в зависимости от текущего домена
+ */
+function getApiBaseUrl() {
+  const hostname = window.location.hostname;
+  
+  if (hostname === 'eralas.ru' || hostname === 'www.eralas.ru') {
+    return 'eralas.ru';
+  }
+
+  if (hostname === 'lkssosi.ru' || hostname === 'www.lkssosi.ru') {
+    return 'lkssosi.ru';
+  }
+
+  // По умолчанию
+  return 'eralas.ru';
+}
+
 document.addEventListener('DOMContentLoaded', () => {
   const group = localStorage.getItem('group');
   const week = localStorage.getItem('week') || '0';
@@ -68,7 +86,7 @@ async function loadSchedule(group, week = '0') {
   }
 
   try {
-    const response = await fetch(`https://lkssosi.ru/api/schedule?group=${group}&week=${week}`);
+    const response = await fetch(`https://${getApiBaseUrl()}/api/schedule?group=${group}&week=${week}`);
     if (!response.ok) throw new Error('Ошибка сети');
     let schedule = await response.json();
 
@@ -78,7 +96,7 @@ async function loadSchedule(group, week = '0') {
 
       // Если на этой неделе пар нет (result.date === ''), пробуем следующую неделю
       if (result.date === '') {
-        const nextResp = await fetch(`https://lkssosi.ru/api/schedule?group=${group}&week=1`);
+        const nextResp = await fetch(`https://${getApiBaseUrl()}/api/schedule?group=${group}&week=1`);
         if (nextResp.ok) {
           const nextWeekSchedule = await nextResp.json();
           if (nextWeekSchedule.length > 0) {
