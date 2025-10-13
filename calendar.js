@@ -18,9 +18,10 @@ function formatDateForICS(date) {
 /**
  * Создает событие iCalendar из данных расписания
  * @param {Object} event - Событие расписания
+ * @param {boolean} isTeacher - Флаг, указывающий что это расписание преподавателя
  * @returns {string} - Событие в формате iCalendar
  */
-function createICSEvent(event) {
+function createICSEvent(event, isTeacher = false) {
     const [day, month, year] = event.date.split('.');
     const [startHour, startMinute] = event.startTime.split(':');
     const [endHour, endMinute] = event.endTime.split(':');
@@ -44,12 +45,19 @@ function createICSEvent(event) {
     const location = escapeICS(classroom);
     
     const descriptionParts = [];
-    if (event.teachers) {
-        const teacherNames = Object.values(event.teachers)
-            .map(t => t.fio)
-            .join(', ');
-        if (teacherNames) descriptionParts.push(teacherNames);
+    
+    // Для преподавателей показываем группу, для групп — преподавателя
+    if (isTeacher) {
+        if (event.group) descriptionParts.push(event.group);
+    } else {
+        if (event.teachers) {
+            const teacherNames = Object.values(event.teachers)
+                .map(t => t.fio)
+                .join(', ');
+            if (teacherNames) descriptionParts.push(teacherNames);
+        }
     }
+    
     if (event.comment) descriptionParts.push(`Комментарий: ${event.comment}`);
     const description = escapeICS(descriptionParts.join('\\n'));
     
@@ -73,10 +81,11 @@ function createICSEvent(event) {
  * Создает календарь в формате iCalendar из массива событий
  * @param {Array} events - Массив событий расписания
  * @param {string} calendarName - Название календаря
+ * @param {boolean} isTeacher - Флаг, указывающий что это расписание преподавателя
  * @returns {string} - Календарь в формате iCalendar
  */
-function createICSCalendar(events, calendarName = 'Расписание') {
-    const icsEvents = events.map(event => createICSEvent(event)).join('\r\n');
+function createICSCalendar(events, calendarName = 'Расписание', isTeacher = false) {
+    const icsEvents = events.map(event => createICSEvent(event, isTeacher)).join('\r\n');
     
     return [
         'BEGIN:VCALENDAR',
@@ -132,7 +141,7 @@ async function getTeacherCalendar(teacherId) {
 
     const allEvents = [...currentWeek, ...nextWeek];
     
-    return createICSCalendar(allEvents, `Расписание преподавателя - 2 недели`);
+    return createICSCalendar(allEvents, `Расписание преподавателя - 2 недели`, true);
 }
 
 module.exports = {
