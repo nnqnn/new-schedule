@@ -16,6 +16,42 @@ function formatDateForICS(date) {
 }
 
 /**
+ * Объединяет события с одинаковым временем и предметом в одно событие
+ * @param {Array} events - Массив событий расписания
+ * @returns {Array} - Массив объединенных событий
+ */
+function mergeEventsByTime(events) {
+    const eventMap = new Map();
+    
+    events.forEach(event => {
+        // Создаем уникальный ключ на основе даты, времени и предмета
+        const key = `${event.date}-${event.startTime}-${event.endTime}-${event.discipline}-${event.classroom}`;
+        
+        if (eventMap.has(key)) {
+            // Если событие уже есть, добавляем группу к существующему
+            const existing = eventMap.get(key);
+            if (event.group) {
+                if (!existing.groups) {
+                    existing.groups = existing.group ? [existing.group] : [];
+                }
+                if (!existing.groups.includes(event.group)) {
+                    existing.groups.push(event.group);
+                }
+            }
+        } else {
+            // Создаем новое событие
+            const merged = { ...event };
+            if (event.group) {
+                merged.groups = [event.group];
+            }
+            eventMap.set(key, merged);
+        }
+    });
+    
+    return Array.from(eventMap.values());
+}
+
+/**
  * Создает событие iCalendar из данных расписания
  * @param {Object} event - Событие расписания
  * @param {boolean} isTeacher - Флаг, указывающий что это расписание преподавателя
@@ -48,7 +84,13 @@ function createICSEvent(event, isTeacher = false) {
     
     // Для преподавателей показываем группу, для групп — преподавателя
     if (isTeacher) {
-        if (event.group) descriptionParts.push(event.group);
+        // Используем объединенные группы если есть, иначе одну группу
+        if (event.groups && event.groups.length > 0) {
+            const groupNames = event.groups.join(', ');
+            descriptionParts.push(groupNames);
+        } else if (event.group) {
+            descriptionParts.push(event.group);
+        }
     } else {
         if (event.teachers) {
             const teacherNames = Object.values(event.teachers)
@@ -141,7 +183,10 @@ async function getTeacherCalendar(teacherId) {
 
     const allEvents = [...currentWeek, ...nextWeek];
     
-    return createICSCalendar(allEvents, `Расписание преподавателя - 2 недели`, true);
+    // Объединяем события с одинаковым временем
+    const mergedEvents = mergeEventsByTime(allEvents);
+    
+    return createICSCalendar(mergedEvents, `Расписание преподавателя - 2 недели`, true);
 }
 
 module.exports = {
@@ -150,5 +195,6 @@ module.exports = {
     
     createICSCalendar,
     createICSEvent,
-    formatDateForICS
+    formatDateForICS,
+    mergeEventsByTime
 }
